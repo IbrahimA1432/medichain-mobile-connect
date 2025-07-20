@@ -1,28 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Wifi, WifiOff } from 'lucide-react';
+import { Search, Plus, QrCode } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { PatientCard, Patient } from './PatientCard';
-import { NFCScanner } from './NFCScanner';
+import { QRCodeImage } from './QRCodeImage';
 import { Badge } from './ui/badge';
 import { useToast } from './ui/use-toast';
 import { AddPatientDialog } from './AddPatientDialog'; 
 import { patientService } from '../services/patientService';
 import { PatientDetailsDialog } from './PatientDetailsDialog';
 import { QRCodeScanner } from './QRCodeScanner';
-// Mock patient data
-const mockPatients: Patient[] = [
-  {
-    id: 'patient_1',
-    name: 'Sarah Johnson',
-    age: 34,
-    gender: 'Female',
-    phone: '+1 (555) 123-4567',
-    address: '123 Maple Street, Springfield',
-    lastVisit: '2024-01-15',
-    condition: 'Diabetes Type 2'
-  },
-];
 
 interface DoctorDashboardProps {
   onPatientSelect: (patient: Patient) => void;
@@ -35,6 +22,8 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const [qrPatient, setQrPatient] = useState<Patient | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
   const { toast } = useToast();
   const filteredPatients = patients.filter((patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,32 +44,37 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
       address: patientData.address || 'N/A',
       lastVisit: patientData.lastVisit || 'N/A',
       condition: patientData.condition || 'N/A',
+      medications: patientData.medications || '',
+      treatments: patientData.treatments || '',
+      symptoms: patientData.symptoms || '',
+      notes: patientData.notes || '',
+      followUp: patientData.followUp || '',
       avatar: patientData.avatar || undefined
     };
     const existingPatient = patients.find(p => p.id === safePatient.id);
-  
-  if (existingPatient) {
-    setSelectedPatient(existingPatient);
-    setIsViewingDetails(true); // Open the details dialog
-    onPatientSelect(existingPatient);
-  } else {
-    // Add new patient and show their details
-    const updatedPatients = patientService.add(safePatient);
-    setPatients(updatedPatients);
-    setSelectedPatient(safePatient);
-    setIsViewingDetails(true); // Open the details dialog
-    onPatientSelect(safePatient);
-    
-    toast({
-      title: 'Success',
-      description: `Added new patient record for ${safePatient.name}.`
-    });
-  }
-};
+
+    if (existingPatient) {
+      setSelectedPatient(existingPatient);
+      setIsViewingDetails(true); // Open the details dialog
+      onPatientSelect(existingPatient);
+    } else {
+      // Add new patient and show their details
+      const updatedPatients = patientService.add(safePatient);
+      setPatients(updatedPatients);
+      setSelectedPatient(safePatient);
+      setIsViewingDetails(true); // Open the details dialog
+      onPatientSelect(safePatient);
+
+      toast({
+        title: 'Success',
+        description: `Added new patient record for ${safePatient.name}.`
+      });
+    }
+  };
   // Load patients on component mount
   useEffect(() => {
     const savedPatients = patientService.getAll();
-    setPatients(savedPatients.length ? savedPatients : mockPatients);
+    setPatients(savedPatients);
   }, []);
 
   const handleAddPatient = (newPatient: Omit<Patient, 'id'>) => {
@@ -124,30 +118,6 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
       title: 'Success',
       description: `Patient ${updatedPatient.name}'s information has been updated.`
     });
-  };
-  const handleNFCScan = (patientId: string) => {
-    const existingPatient = patients.find(p => p.id === patientId);
-    
-    if (existingPatient) {
-      setSelectedPatient(existingPatient);
-      onPatientSelect(existingPatient);
-    } else {
-      const newPatient = {
-        id: patientId,
-        name: 'New NFC Patient',
-        age: 0,
-        gender: 'Unknown',
-        phone: '',
-        address: 'NFC Scanned Patient',
-        lastVisit: new Date().toISOString().split('T')[0],
-        condition: 'Initial Checkup'
-      };
-      
-      const updatedPatients = patientService.add(newPatient);
-      setPatients(updatedPatients);
-      setSelectedPatient(newPatient);
-      onPatientSelect(newPatient);
-    }
   };
 
   return (
@@ -211,27 +181,73 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
         
         {filteredPatients.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No patients found. {searchTerm ? 'Try adjusting your search.' : 'Start by scanning an NFC device.'}
+            No patients found. {searchTerm ? 'Try adjusting your search.' : 'Start by scanning a QR Code.'}
           </div>
         ) : (
           <div className="space-y-3">
             {filteredPatients.map((patient) => (
-              <PatientCard
-                key={patient.id}
-                patient={patient}
-                role="doctor"
-                isSelected={selectedPatient?.id === patient.id}
-                onSelect={(patient) => {
-                  setSelectedPatient(patient);
-                  onPatientSelect(patient);
-                }}
-                onViewRecords={() => {
-                  setSelectedPatient(patient);
-                  setIsViewingDetails(true);
-                }}
-                onDelete={handleDeletePatient}
-              />
+              <div key={patient.id} className="relative">
+                {/* QR code icon top left */}
+                <button
+                  className="absolute left-2 top-2 z-10 bg-white rounded-full p-1 shadow hover:bg-gray-100"
+                  title="Show QR Code"
+                  onClick={() => { setQrPatient(patient); setShowQrModal(true); }}
+                >
+                  <QrCode className="w-5 h-5 text-primary" />
+                </button>
+                <PatientCard
+                  patient={patient}
+                  role="doctor"
+                  isSelected={selectedPatient?.id === patient.id}
+                  onSelect={(patient) => {
+                    setSelectedPatient(patient);
+                    onPatientSelect(patient);
+                  }}
+                  onViewRecords={() => {
+                    setSelectedPatient(patient);
+                    setIsViewingDetails(true);
+                  }}
+                  onDelete={handleDeletePatient}
+                />
+              </div>
             ))}
+      {/* QR Code Modal */}
+      {showQrModal && qrPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center relative min-w-[320px]">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowQrModal(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <h4 className="mb-4 text-lg font-semibold">Patient QR Code</h4>
+            <QRCodeImage
+              text={JSON.stringify({
+                id: qrPatient.id,
+                name: qrPatient.name,
+                age: qrPatient.age,
+                gender: qrPatient.gender,
+                phone: qrPatient.phone,
+                address: qrPatient.address,
+                lastVisit: qrPatient.lastVisit,
+                condition: qrPatient.condition,
+                medications: qrPatient.medications,
+                treatments: qrPatient.treatments,
+                symptoms: qrPatient.symptoms,
+                notes: qrPatient.notes,
+                followUp: qrPatient.followUp,
+                avatar: qrPatient.avatar
+              })}
+              size={200}
+            />
+            <div className="mt-2 text-sm text-muted-foreground text-center">
+              Scan this QR code to transfer patient info
+            </div>
+          </div>
+        </div>
+      )}
           </div>
         
         )}

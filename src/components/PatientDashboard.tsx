@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Heart, Activity, Calendar, Share2, Download, QrCode } from 'lucide-react';
+import { Heart, Activity, Calendar, Download, QrCode, Scan } from 'lucide-react';
 import { QRCodeImage } from './QRCodeImage';
+import { QRCodeScanner } from './QRCodeScanner';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { MedicalRecord, MedicalRecordData } from './MedicalRecord';
 import { Badge } from './ui/badge';
 
-// Mock patient data
+// Initial patient data (empty for real use)
 const initialPatientData = {
-  id: 'patient_1',
-  name: 'Sarah Johnson',
-  age: 34,
-  gender: 'Female',
-  bloodType: 'O+',
-  allergies: ['Penicillin', 'Shellfish'],
-  emergencyContact: '+1 (555) 999-1234'
+  id: '',
+  name: '',
+  age: '',
+  gender: '',
+  bloodType: '',
+  allergies: [],
+  emergencyContact: ''
 };
 
-// Mock medical records
+// Mock medical records (for demo)
 const mockRecords: MedicalRecordData[] = [
   {
     id: 'record_1',
@@ -55,37 +56,38 @@ const mockRecords: MedicalRecordData[] = [
   }
 ];
 
-
 export const PatientDashboard = () => {
   const [records] = useState<MedicalRecordData[]>(mockRecords);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecordData | null>(null);
   const [patientData, setPatientData] = useState<any>(initialPatientData);
   const [showQR, setShowQR] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
-    // Set the latest record as selected by default
     if (records.length > 0) {
       setSelectedRecord(records[0]);
     }
   }, [records]);
 
-  const handleShowQR = () => {
-    setShowQR(true);
-  };
-
-
-  // Only update QR if actual patient info changes (simulate a real edit for demo)
-  const handleUpdateQR = () => {
-    // Toggle a demo allergy for demonstration
-    let newAllergies;
-    if (patientData.allergies.includes('DemoAllergy')) {
-      newAllergies = patientData.allergies.filter((a: string) => a !== 'DemoAllergy');
-    } else {
-      newAllergies = [...patientData.allergies, 'DemoAllergy'];
+  // Handle QR scan and update patient info
+  const handleQRScan = (scanned: any) => {
+    try {
+      const data = typeof scanned === 'string' ? JSON.parse(scanned) : scanned;
+      if (data && data.id && data.name) {
+        setPatientData(data);
+        setShowScanner(false);
+        alert('Profile updated from QR code!');
+      } else {
+        alert('Scanned QR code does not contain valid patient info.');
+      }
+    } catch (e) {
+      alert('Invalid QR code format.');
+      setShowScanner(false);
     }
-    setPatientData({ ...patientData, allergies: newAllergies });
-    setShowQR(true);
   };
+
+  const handleShowQR = () => setShowQR(true);
+
 
   return (
     <div className="p-6 space-y-6">
@@ -98,9 +100,31 @@ export const PatientDashboard = () => {
             <Button variant="outline" size="icon" onClick={handleShowQR} className="ml-auto">
               <QrCode className="w-5 h-5" />
             </Button>
+            <Button variant="outline" size="icon" onClick={() => setShowScanner(true)} className="ml-2" title="Scan QR to update profile">
+              <Scan className="w-5 h-5" />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* QR Code Scanner Modal */}
+          {showScanner && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center relative min-w-[320px]">
+                <button
+                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setShowScanner(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <h4 className="mb-4 text-lg font-semibold">Scan Doctor's QR Code</h4>
+                <QRCodeScanner onScanComplete={handleQRScan} />
+                <div className="mt-2 text-sm text-muted-foreground text-center">
+                  Scan the QR code shown by your doctor to update your profile
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Name:</span>
@@ -115,23 +139,41 @@ export const PatientDashboard = () => {
               <p className="font-medium">{patientData.gender}</p>
             </div>
             <div>
-              <span className="text-muted-foreground">Blood Type:</span>
-              <p className="font-medium">{patientData.bloodType}</p>
+              <span className="text-muted-foreground">Phone:</span>
+              <p className="font-medium">{patientData.phone}</p>
             </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Allergies:</span>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {patientData.allergies.map((allergy: string, index: number) => (
-                <Badge key={index} variant="destructive" className="text-xs">
-                  {allergy}
-                </Badge>
-              ))}
+            <div>
+              <span className="text-muted-foreground">Address:</span>
+              <p className="font-medium">{patientData.address}</p>
             </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Emergency Contact:</span>
-            <p className="font-medium">{patientData.emergencyContact}</p>
+            <div>
+              <span className="text-muted-foreground">Last Visit:</span>
+              <p className="font-medium">{patientData.lastVisit}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Condition:</span>
+              <p className="font-medium">{patientData.condition}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Medications:</span>
+              <p className="font-medium">{patientData.medications}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Treatments:</span>
+              <p className="font-medium">{patientData.treatments}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Symptoms:</span>
+              <p className="font-medium">{patientData.symptoms}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Notes:</span>
+              <p className="font-medium">{patientData.notes}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Follow Up:</span>
+              <p className="font-medium">{patientData.followUp}</p>
+            </div>
           </div>
           {showQR && (
             <div className="flex flex-col items-center gap-2 mt-4">
@@ -146,11 +188,15 @@ export const PatientDashboard = () => {
                   address: patientData.address || 'N/A',
                   lastVisit: patientData.lastVisit || 'N/A',
                   condition: patientData.condition || 'N/A',
+                  medications: patientData.medications || '',
+                  treatments: patientData.treatments || '',
+                  symptoms: patientData.symptoms || '',
+                  notes: patientData.notes || '',
+                  followUp: patientData.followUp || '',
                   avatar: patientData.avatar || undefined
                 })}
                 size={180}
               />
-              <Button variant="outline" size="sm" onClick={handleUpdateQR}>Update QR Code</Button>
             </div>
           )}
         </CardContent>
@@ -174,7 +220,6 @@ export const PatientDashboard = () => {
           <Activity className="w-5 h-5 text-primary" />
           Medical History ({records.length} records)
         </h3>
-        
         {records.length === 0 ? (
           <Card className="p-8 text-center">
             <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

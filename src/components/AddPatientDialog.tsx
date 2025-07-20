@@ -19,7 +19,12 @@ export const AddPatientDialog = ({ open, onClose, onSubmit }: AddPatientDialogPr
     gender: '',
     phone: '',
     address: '',
-    condition: ''
+    condition: '',
+    medications: '',
+    treatments: '',
+    symptoms: '',
+    notes: '',
+    followUp: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,10 +32,15 @@ export const AddPatientDialog = ({ open, onClose, onSubmit }: AddPatientDialogPr
     const newPatient = {
       ...formData,
       age: parseInt(formData.age),
-      lastVisit: new Date().toISOString().split('T')[0]
+      lastVisit: new Date().toISOString().split('T')[0],
+      medications: formData.medications,
+      treatments: formData.treatments,
+      symptoms: formData.symptoms,
+      notes: formData.notes,
+      followUp: formData.followUp
     };
     onSubmit(newPatient);
-    setFormData({ name: '', age: '', gender: '', phone: '', address: '', condition: '' });
+    setFormData({ name: '', age: '', gender: '', phone: '', address: '', condition: '', medications: '', treatments: '', symptoms: '', notes: '', followUp: '' });
   };
 
   return (
@@ -105,6 +115,51 @@ export const AddPatientDialog = ({ open, onClose, onSubmit }: AddPatientDialogPr
                 required
               />
             </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="medications" className="text-right">Medications</Label>
+            <Input
+              id="medications"
+              value={formData.medications}
+              onChange={(e) => setFormData({ ...formData, medications: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="treatments" className="text-right">Treatments</Label>
+            <Input
+              id="treatments"
+              value={formData.treatments}
+              onChange={(e) => setFormData({ ...formData, treatments: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="symptoms" className="text-right">Symptoms</Label>
+            <Input
+              id="symptoms"
+              value={formData.symptoms}
+              onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="notes" className="text-right">Notes</Label>
+            <Input
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="followUp" className="text-right">Follow Up</Label>
+            <Input
+              id="followUp"
+              value={formData.followUp}
+              onChange={(e) => setFormData({ ...formData, followUp: e.target.value })}
+              className="col-span-3"
+            />
+          </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

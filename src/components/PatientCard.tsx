@@ -14,9 +14,13 @@ interface Patient {
   address: string;
   lastVisit: string;
   condition: string;
+  medications: string;
+  treatments: string;
+  symptoms: string;
+  notes: string;
+  followUp: string;
   avatar?: string;
 }
-
 interface PatientCardProps {
   patient: Patient;
   onSelect?: (patient: Patient) => void;

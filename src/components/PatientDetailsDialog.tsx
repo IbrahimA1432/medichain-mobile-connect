@@ -137,6 +137,61 @@ export const PatientDetailsDialog = ({ patient, open, onClose, onUpdate }: Patie
                   <p className="mt-1">{patient.condition}</p>
                 )}
               </div>
+              <div>
+                <Label>Medications</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.medications}
+                    onChange={(e) => setEditedPatient({ ...editedPatient, medications: e.target.value })}
+                  />
+                ) : (
+                  <p className="mt-1">{patient.medications}</p>
+                )}
+              </div>
+              <div>
+                <Label>Treatments</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.treatments}
+                    onChange={(e) => setEditedPatient({ ...editedPatient, treatments: e.target.value })}
+                  />
+                ) : (
+                  <p className="mt-1">{patient.treatments}</p>
+                )}
+              </div>
+              <div>
+                <Label>Symptoms</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.symptoms}
+                    onChange={(e) => setEditedPatient({ ...editedPatient, symptoms: e.target.value })}
+                  />
+                ) : (
+                  <p className="mt-1">{patient.symptoms}</p>
+                )}
+              </div>
+              <div>
+                <Label>Notes</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.notes}
+                    onChange={(e) => setEditedPatient({ ...editedPatient, notes: e.target.value })}
+                  />
+                ) : (
+                  <p className="mt-1">{patient.notes}</p>
+                )}
+              </div>
+              <div>
+                <Label>Follow Up</Label>
+                {isEditing ? (
+                  <Input
+                    value={editedPatient.followUp}
+                    onChange={(e) => setEditedPatient({ ...editedPatient, followUp: e.target.value })}
+                  />
+                ) : (
+                  <p className="mt-1">{patient.followUp}</p>
+                )}
+              </div>
             </div>
           </Card>
         </div>

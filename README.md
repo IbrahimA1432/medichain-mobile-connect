@@ -2,7 +2,7 @@
 
 ## Project info
 
-URL
+Arhum is awesome
 
 **URL**: https://lovable.dev/projects/66dfaaaa-bb3b-4947-82f1-173f15f4fcb9
 

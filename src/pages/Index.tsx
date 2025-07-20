@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { MobileLayout } from '@/components/MobileLayout';
+import { Header } from '@/components/Header';
+import { DoctorDashboard } from '@/components/DoctorDashboard';
+import { PatientDashboard } from '@/components/PatientDashboard';
+import { Patient } from '@/components/PatientCard';
 
 const Index = () => {
+  const [userRole, setUserRole] = useState<'doctor' | 'patient'>('doctor');
+  const [userName] = useState('Dr. Johnson');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+
+  const handleRoleSwitch = () => {
+    setUserRole(prev => prev === 'doctor' ? 'patient' : 'doctor');
+    setSelectedPatient(null);
+  };
+
+  const handlePatientSelect = (patient: Patient) => {
+    setSelectedPatient(patient);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <MobileLayout>
+      <Header 
+        role={userRole}
+        userName={userName}
+        onRoleSwitch={handleRoleSwitch}
+      />
+      
+      {userRole === 'doctor' ? (
+        <DoctorDashboard onPatientSelect={handlePatientSelect} />
+      ) : (
+        <PatientDashboard />
+      )}
+    </MobileLayout>
   );
 };
 

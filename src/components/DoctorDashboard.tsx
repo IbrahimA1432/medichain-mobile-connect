@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, Wifi, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { PatientCard, Patient } from './PatientCard';
 import { NFCScanner } from './NFCScanner';
 import { Badge } from './ui/badge';
-
+import { useToast } from './ui/use-toast';
+import { AddPatientDialog } from './AddPatientDialog'; 
+import { patientService } from '../services/patientService';
+import { PatientDetailsDialog } from './PatientDetailsDialog';
 // Mock patient data
 const mockPatients: Patient[] = [
   {
@@ -18,26 +21,6 @@ const mockPatients: Patient[] = [
     lastVisit: '2024-01-15',
     condition: 'Diabetes Type 2'
   },
-  {
-    id: 'patient_2',
-    name: 'Michael Chen',
-    age: 45,
-    gender: 'Male',
-    phone: '+1 (555) 234-5678',
-    address: '456 Oak Avenue, Springfield',
-    lastVisit: '2024-01-10',
-    condition: 'Hypertension'
-  },
-  {
-    id: 'patient_3',
-    name: 'Emily Rodriguez',
-    age: 28,
-    gender: 'Female',
-    phone: '+1 (555) 345-6789',
-    address: '789 Pine Road, Springfield',
-    lastVisit: '2024-01-08',
-    condition: 'Asthma'
-  }
 ];
 
 interface DoctorDashboardProps {
@@ -45,42 +28,96 @@ interface DoctorDashboardProps {
 }
 
 export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
-  const [patients] = useState<Patient[]>(mockPatients);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isViewingDetails, setIsViewingDetails] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isOnline, setIsOnline] = useState(true);
-
-  const filteredPatients = patients.filter(patient =>
+  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const { toast } = useToast();
+  const filteredPatients = patients.filter((patient) =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  // Load patients on component mount
+  useEffect(() => {
+    const savedPatients = patientService.getAll();
+    setPatients(savedPatients.length ? savedPatients : mockPatients);
+  }, []);
 
-  const handleNFCScan = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId) || {
-      id: patientId,
-      name: 'John Doe',
-      age: 42,
-      gender: 'Male',
-      phone: '+1 (555) 999-0000',
-      address: 'NFC Scanned Patient',
-      lastVisit: new Date().toISOString().split('T')[0],
-      condition: 'General Checkup'
+  const handleAddPatient = (newPatient: Omit<Patient, 'id'>) => {
+    const patientWithId = {
+      ...newPatient,
+      id: `patient_${Date.now()}` // Use timestamp for unique ID
     };
     
-    setSelectedPatient(patient);
-    onPatientSelect(patient);
+    const updatedPatients = patientService.add(patientWithId);
+    setPatients(updatedPatients);
+    setIsAddPatientOpen(false);
+    
+    toast({
+      title: 'Success',
+      description: `Patient ${newPatient.name} has been added.`
+    });
+  };
+
+  const handleDeletePatient = (patientId: string) => {
+    if (window.confirm('Are you sure you want to delete this patient record? This action cannot be undone.')) {
+      const updatedPatients = patientService.delete(patientId);
+      setPatients(updatedPatients);
+      
+      if (selectedPatient?.id === patientId) {
+        setSelectedPatient(null);
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Patient record has been deleted.',
+        variant: 'destructive'
+      });
+    }
+  };
+  const handleUpdatePatient = (updatedPatient: Patient) => {
+    const updatedPatients = patientService.update(updatedPatient);
+    setPatients(updatedPatients);
+    setSelectedPatient(updatedPatient);
+    
+    toast({
+      title: 'Success',
+      description: `Patient ${updatedPatient.name}'s information has been updated.`
+    });
+  };
+  const handleNFCScan = (patientId: string) => {
+    const existingPatient = patients.find(p => p.id === patientId);
+    
+    if (existingPatient) {
+      setSelectedPatient(existingPatient);
+      onPatientSelect(existingPatient);
+    } else {
+      const newPatient = {
+        id: patientId,
+        name: 'New NFC Patient',
+        age: 0,
+        gender: 'Unknown',
+        phone: '',
+        address: 'NFC Scanned Patient',
+        lastVisit: new Date().toISOString().split('T')[0],
+        condition: 'Initial Checkup'
+      };
+      
+      const updatedPatients = patientService.add(newPatient);
+      setPatients(updatedPatients);
+      setSelectedPatient(newPatient);
+      onPatientSelect(newPatient);
+    }
   };
 
   return (
     <div className="p-6 space-y-6">
       {/* Status Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-center">
         <h2 className="text-xl font-semibold text-foreground">Patient Management</h2>
         <div className="flex items-center gap-2">
-          <Badge variant={isOnline ? "default" : "destructive"} className="text-xs">
-            {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            {isOnline ? 'Online' : 'Offline'}
-          </Badge>
         </div>
       </div>
 
@@ -99,7 +136,7 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
               className="pl-10"
             />
           </div>
-          <Button variant="medical" size="sm">
+          <Button variant="medical" size="sm" onClick={() => setIsAddPatientOpen(true)}>
             <Plus className="w-4 h-4" />
             Add Patient
           </Button>
@@ -128,12 +165,29 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
                   setSelectedPatient(patient);
                   onPatientSelect(patient);
                 }}
-                onViewRecords={onPatientSelect}
+                onViewRecords={() => {
+                  setSelectedPatient(patient);
+                  setIsViewingDetails(true);
+                }}
+                onDelete={handleDeletePatient}
               />
             ))}
           </div>
         )}
       </div>
+      {/* Patient Details Dialog */}
+        <PatientDetailsDialog
+          patient={selectedPatient}
+          open={isViewingDetails}
+          onClose={() => setIsViewingDetails(false)}
+          onUpdate={handleUpdatePatient}
+        />
+        {/* Add Patient Dialog */}
+        <AddPatientDialog
+          open={isAddPatientOpen}
+          onClose={() => setIsAddPatientOpen(false)}
+          onSubmit={handleAddPatient}
+        />
     </div>
   );
 };

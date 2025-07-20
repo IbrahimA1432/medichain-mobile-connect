@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Trash2 } from 'lucide-react';
 
 interface Patient {
   id: string;
@@ -20,11 +21,12 @@ interface PatientCardProps {
   patient: Patient;
   onSelect?: (patient: Patient) => void;
   onViewRecords?: (patient: Patient) => void;
+  onDelete?: (patientId: string) => void;
   isSelected?: boolean;
   role: 'doctor' | 'patient';
 }
 
-export const PatientCard = ({ patient, onSelect, onViewRecords, isSelected, role }: PatientCardProps) => {
+export const PatientCard = ({ patient, onSelect, onViewRecords, onDelete, isSelected, role }: PatientCardProps) => {
   return (
     <Card 
       className={`transition-all duration-300 cursor-pointer hover:shadow-medical-md ${
@@ -83,6 +85,20 @@ export const PatientCard = ({ patient, onSelect, onViewRecords, isSelected, role
           >
             <User className="w-4 h-4" />
             View Records
+          </Button>
+        )}
+        {role === 'doctor' && onDelete && (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            className="w-full mt-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(patient.id);
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Patient
           </Button>
         )}
       </CardContent>

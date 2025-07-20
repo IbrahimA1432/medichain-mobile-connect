@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Wifi, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,6 +9,7 @@ import { useToast } from './ui/use-toast';
 import { AddPatientDialog } from './AddPatientDialog'; 
 import { patientService } from '../services/patientService';
 import { PatientDetailsDialog } from './PatientDetailsDialog';
+import { QRCodeScanner } from './QRCodeScanner';
 // Mock patient data
 const mockPatients: Patient[] = [
   {
@@ -39,6 +40,26 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const handleQRScan = (patientData: any) => {
+    // Defensive: check for required fields, provide fallbacks
+    if (!patientData || typeof patientData !== 'object' || !patientData.name) {
+      alert('Scanned QR code does not contain valid patient info.');
+      return;
+    }
+    const safePatient = {
+      id: patientData.id || 'unknown',
+      name: patientData.name || 'Unknown',
+      age: patientData.age || 0,
+      gender: patientData.gender || 'Unknown',
+      phone: patientData.phone || 'N/A',
+      address: patientData.address || 'N/A',
+      lastVisit: patientData.lastVisit || 'N/A',
+      condition: patientData.condition || 'N/A',
+      avatar: patientData.avatar || undefined
+    };
+    setSelectedPatient(safePatient);
+    onPatientSelect(safePatient);
+  };
   // Load patients on component mount
   useEffect(() => {
     const savedPatients = patientService.getAll();
@@ -121,8 +142,29 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
         </div>
       </div>
 
-      {/* NFC Scanner */}
-      <NFCScanner onScanComplete={handleNFCScan} />
+      {selectedPatient ? (
+        <div className="space-y-4">
+          <Button variant="outline" size="sm" onClick={() => setSelectedPatient(null)}>
+            ← Back
+          </Button>
+          {selectedPatient && selectedPatient.name && selectedPatient.age !== undefined && selectedPatient.gender && selectedPatient.phone && selectedPatient.address && selectedPatient.lastVisit && selectedPatient.condition ? (
+            <PatientCard
+              patient={selectedPatient}
+              role="doctor"
+              isSelected={true}
+              onViewRecords={onPatientSelect}
+            />
+          ) : (
+            <div className="text-destructive text-center p-4 border border-destructive rounded">
+              Error: Scanned QR code does not contain valid or complete patient info.<br />
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => setSelectedPatient(null)}>Scan Again</Button>
+            </div>
+          )}
+          </div>
+      ) : (
+        <>
+          {/* QR Code Scanner */}
+          <QRCodeScanner onScanComplete={handleQRScan} />
 
       {/* Search and Add Patient */}
       <div className="space-y-3">
@@ -173,6 +215,7 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
               />
             ))}
           </div>
+        
         )}
       </div>
       {/* Patient Details Dialog */}
@@ -188,6 +231,8 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
           onClose={() => setIsAddPatientOpen(false)}
           onSubmit={handleAddPatient}
         />
+        </>
+        )}
     </div>
   );
 };

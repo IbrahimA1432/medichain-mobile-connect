@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Heart, Activity, Calendar, Share2, Download } from 'lucide-react';
+import { Heart, Activity, Calendar, Share2, Download, QrCode } from 'lucide-react';
+import { QRCodeImage } from './QRCodeImage';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { MedicalRecord, MedicalRecordData } from './MedicalRecord';
 import { Badge } from './ui/badge';
 
 // Mock patient data
-const mockPatientData = {
+const initialPatientData = {
+  id: 'patient_1',
   name: 'Sarah Johnson',
   age: 34,
   gender: 'Female',
@@ -53,9 +55,12 @@ const mockRecords: MedicalRecordData[] = [
   }
 ];
 
+
 export const PatientDashboard = () => {
   const [records] = useState<MedicalRecordData[]>(mockRecords);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecordData | null>(null);
+  const [patientData, setPatientData] = useState<any>(initialPatientData);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     // Set the latest record as selected by default
@@ -64,14 +69,22 @@ export const PatientDashboard = () => {
     }
   }, [records]);
 
-  const handleShareRecord = () => {
-    // Simulate sharing functionality
-    alert('Record sharing functionality would integrate with NFC here');
+  const handleShowQR = () => {
+    setShowQR(true);
   };
 
-  const handleDownloadRecord = () => {
-    // Simulate download functionality
-    alert('Record download functionality');
+
+  // Only update QR if actual patient info changes (simulate a real edit for demo)
+  const handleUpdateQR = () => {
+    // Toggle a demo allergy for demonstration
+    let newAllergies;
+    if (patientData.allergies.includes('DemoAllergy')) {
+      newAllergies = patientData.allergies.filter((a: string) => a !== 'DemoAllergy');
+    } else {
+      newAllergies = [...patientData.allergies, 'DemoAllergy'];
+    }
+    setPatientData({ ...patientData, allergies: newAllergies });
+    setShowQR(true);
   };
 
   return (
@@ -82,53 +95,74 @@ export const PatientDashboard = () => {
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-accent" />
             My Medical Profile
+            <Button variant="outline" size="icon" onClick={handleShowQR} className="ml-auto">
+              <QrCode className="w-5 h-5" />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Name:</span>
-              <p className="font-medium">{mockPatientData.name}</p>
+              <p className="font-medium">{patientData.name}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Age:</span>
-              <p className="font-medium">{mockPatientData.age} years</p>
+              <p className="font-medium">{patientData.age} years</p>
             </div>
             <div>
               <span className="text-muted-foreground">Gender:</span>
-              <p className="font-medium">{mockPatientData.gender}</p>
+              <p className="font-medium">{patientData.gender}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Blood Type:</span>
-              <p className="font-medium">{mockPatientData.bloodType}</p>
+              <p className="font-medium">{patientData.bloodType}</p>
             </div>
           </div>
-          
           <div>
             <span className="text-muted-foreground">Allergies:</span>
             <div className="flex flex-wrap gap-1 mt-1">
-              {mockPatientData.allergies.map((allergy, index) => (
+              {patientData.allergies.map((allergy: string, index: number) => (
                 <Badge key={index} variant="destructive" className="text-xs">
                   {allergy}
                 </Badge>
               ))}
             </div>
           </div>
-          
           <div>
             <span className="text-muted-foreground">Emergency Contact:</span>
-            <p className="font-medium">{mockPatientData.emergencyContact}</p>
+            <p className="font-medium">{patientData.emergencyContact}</p>
           </div>
+          {showQR && (
+            <div className="flex flex-col items-center gap-2 mt-4">
+              {/* Always include all fields required by the Patient interface for QR code */}
+              <QRCodeImage
+                text={JSON.stringify({
+                  id: patientData.id || 'unknown',
+                  name: patientData.name || 'Unknown',
+                  age: patientData.age || 0,
+                  gender: patientData.gender || 'Unknown',
+                  phone: patientData.phone || 'N/A',
+                  address: patientData.address || 'N/A',
+                  lastVisit: patientData.lastVisit || 'N/A',
+                  condition: patientData.condition || 'N/A',
+                  avatar: patientData.avatar || undefined
+                })}
+                size={180}
+              />
+              <Button variant="outline" size="sm" onClick={handleUpdateQR}>Update QR Code</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" onClick={handleShareRecord} className="w-full">
-          <Share2 className="w-4 h-4" />
-          Share via NFC
+        <Button variant="outline" onClick={handleShowQR} className="w-full">
+          <QrCode className="w-4 h-4" />
+          Show QR Code
         </Button>
-        <Button variant="outline" onClick={handleDownloadRecord} className="w-full">
+        <Button variant="outline" onClick={() => alert('Record download functionality')} className="w-full">
           <Download className="w-4 h-4" />
           Download Records
         </Button>

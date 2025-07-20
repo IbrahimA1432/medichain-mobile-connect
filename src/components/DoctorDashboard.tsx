@@ -57,9 +57,26 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
       condition: patientData.condition || 'N/A',
       avatar: patientData.avatar || undefined
     };
+    const existingPatient = patients.find(p => p.id === safePatient.id);
+  
+  if (existingPatient) {
+    setSelectedPatient(existingPatient);
+    setIsViewingDetails(true); // Open the details dialog
+    onPatientSelect(existingPatient);
+  } else {
+    // Add new patient and show their details
+    const updatedPatients = patientService.add(safePatient);
+    setPatients(updatedPatients);
     setSelectedPatient(safePatient);
+    setIsViewingDetails(true); // Open the details dialog
     onPatientSelect(safePatient);
-  };
+    
+    toast({
+      title: 'Success',
+      description: `Added new patient record for ${safePatient.name}.`
+    });
+  }
+};
   // Load patients on component mount
   useEffect(() => {
     const savedPatients = patientService.getAll();
@@ -165,7 +182,8 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
         <>
           {/* QR Code Scanner */}
           <QRCodeScanner onScanComplete={handleQRScan} />
-
+        </>
+      )}
       {/* Search and Add Patient */}
       <div className="space-y-3">
         <div className="flex gap-2">
@@ -231,8 +249,6 @@ export const DoctorDashboard = ({ onPatientSelect }: DoctorDashboardProps) => {
           onClose={() => setIsAddPatientOpen(false)}
           onSubmit={handleAddPatient}
         />
-        </>
-        )}
     </div>
   );
 };
